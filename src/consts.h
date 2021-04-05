@@ -21,7 +21,7 @@
 #define WRENCH_THICKNESS 10
 #define WRENCH_MAX_ANGLE 30
 #define WRENCH_SPIN_SPEED 3000
-
+#define WRENCH_BOUNCE_LOSS_RATIO 0.9
 
 
 // limits

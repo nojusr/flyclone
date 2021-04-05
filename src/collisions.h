@@ -27,14 +27,14 @@ bool CheckCollisionLineLine(Line a, Line b) {
 
     // if uA and uB are between 0-1, lines are colliding
     if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
-    return true;
+        return true;
     }
     return false;
 }
 
 
 bool CheckCollisionLinePoint(Vector2 point, Line line) {
-    float buffer = 0.1; 
+    float buffer = 10; 
     float lineLen = Vector2Distance(line.start, line.end);
     float d1 = Vector2Distance(point, line.start);
     float d2 = Vector2Distance(point, line.end);

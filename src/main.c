@@ -94,10 +94,31 @@ void HandleCollisions() {
     for (int i = 0; i < levelState.loadedLineCount; i++) {
         LineObstacle lineObs = levelState.loadedLines[i];
         if (CheckCollisionLineObsWrench(lineObs)) {
-            if (lineObs.type == LINE_YELLOW && !state.isSpinning) {
-                levelState.isDead = true;
-                levelState.tries++;
-            }
+            if (lineObs.type == LINE_YELLOW) {
+                if (state.isSpinning) {
+                    //https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
+                    
+                    Line line = lineObs.line;
+                    float dx = line.end.x - line.start.x;
+                    float dy = line.end.y - line.start.y;
+                    Vector2 n = Vector2Normalize((Vector2){-dy, dx});
+
+
+                    Vector2 d = (Vector2){state.velX, state.velY};
+
+                    float dot = Vector2DotProduct(d, n);
+
+                    Vector2 sub = (Vector2){2*n.x*dot,2*n.y*dot};
+
+                    Vector2 r = Vector2Subtract(d, sub);
+
+                    state.velX = r.x * WRENCH_BOUNCE_LOSS_RATIO;
+                    state.velY = r.y * WRENCH_BOUNCE_LOSS_RATIO;
+                } else {
+                    levelState.isDead = true;
+                    levelState.tries++;
+                }
+            } 
         }
     }
 }
@@ -138,7 +159,7 @@ void DrawWrench() {
         rec.height = WRENCH_THICKNESS;
     }
 
-    
+
     double angle = (state.velX/MAX_FLY_SPEED) * WRENCH_MAX_ANGLE;
 
     if (angle > WRENCH_MAX_ANGLE) {
@@ -271,6 +292,15 @@ void HandleInput() {
         exit(0);
     }
 
+    if (IsKeyPressed(KEY_R) && DEBUG) {
+        state.posX = levelState.spawnPoint.x;
+        state.posY = levelState.spawnPoint.y;
+        state.velX = 0;
+        state.velY = 0;
+        levelState.isDead = false;
+        return;
+    }
+
     if (!levelState.isDead){
         // jumping and spinning are mutually exclusive
         if (IsKeyDown(KEY_X)) {
@@ -291,6 +321,7 @@ void HandleInput() {
         if (IsKeyPressed(KEY_R)) {
             state.posX = levelState.spawnPoint.x;
             state.posY = levelState.spawnPoint.y;
+            state.velX = 0;
             levelState.isDead = false;
         }
     }
