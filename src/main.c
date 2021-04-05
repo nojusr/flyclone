@@ -75,6 +75,14 @@ typedef struct {
     bool isSpinning;
 } WrenchState;
 
+typedef struct {
+    bool isDead;
+    bool levelLoaded;
+    int tries;
+    Vector2 spawnPoint;
+
+} LevelState; // TEMPTEMPTEMP
+
 
 typedef struct {
     Vector2 start;
@@ -96,8 +104,9 @@ typedef struct {
 
 // GLOBALS ---------------------------------------------------------------------
 
-WrenchState lastState; // global state of the last frame
-WrenchState state; // global state for wrench/player
+WrenchState lastState; // global wrench state of the last frame
+WrenchState state; // global wrench state for wrench/player
+LevelState levelState;
 float deltaTime = 0.0; // gets updated every frame
 double spinningWrenchAngle = 0; // used to animate the wrench spinning
 
@@ -129,6 +138,13 @@ void InitCamera() {
     output.rotation = 0.0;
     output.zoom = 1.0;
     camera = output;
+}
+
+void InitLevelState() {
+    levelState.isDead = false;
+    levelState.spawnPoint = (Vector2){0.0, 0.0};
+    levelState.levelLoaded = true;
+    levelState.tries = 0;
 }
 
 // GAME LOGIC ------------------------------------------------------------------
@@ -262,15 +278,14 @@ void GetLinesOfRectangle (Line *output, Rectangle input) {
 
 bool IsLineCollidingWithWrench(LineObstacle obs) {
     if (state.isSpinning) { // collider is circle with r = WRENCH_WIDTH/2
-        return IsCircleCollidingWithLine((Vector2){state.posX, state.posY}, WRENCH_WIDTH/2, obs.line);
+        return IsCircleCollidingWithLine((Vector2){state.posX-(WRENCH_WIDTH/2), state.posY}, WRENCH_WIDTH/2, obs.line);
     } else if (state.isJumping) { // collider is rect with h = WRENCH_WIDTH/2, w = WRENCH_THICKNESS
         Rectangle collider = {
-            state.posY,
-            state.posX - (WRENCH_THICKNESS/2),
+            state.posX-(WRENCH_WIDTH/2)-(WRENCH_THICKNESS/2),
+            state.posY - (WRENCH_THICKNESS/2),
             WRENCH_THICKNESS,
             WRENCH_WIDTH/2,  
         };
-
         Line rectangleLines[4] = {(Vector2){0, 0}};
 
         GetLinesOfRectangle(rectangleLines, collider);
@@ -289,8 +304,8 @@ bool IsLineCollidingWithWrench(LineObstacle obs) {
 
     } else { // collider is rect with h = WRENCH_THICKNESS, w = WRENCH_WIDTH
         Rectangle collider = {
-            state.posY,
-            state.posX - (WRENCH_THICKNESS/2),
+            state.posX-WRENCH_WIDTH,
+            state.posY - (WRENCH_THICKNESS/2),
             WRENCH_WIDTH,
             WRENCH_THICKNESS  
         };
@@ -313,13 +328,17 @@ bool IsLineCollidingWithWrench(LineObstacle obs) {
     }
 }
 
-bool isWrenchCollidingWithLines() {
+void HandleCollisions() {
     for (int i = 0; i < loadedLineCount; i++) {
-        if (IsLineCollidingWithWrench(loadedLines[i])) {
-            return true;
+        
+        LineObstacle lineObs = loadedLines[i];
+        if (IsLineCollidingWithWrench(lineObs)) {
+            if (lineObs.type == LINE_YELLOW && !state.isSpinning) {
+                levelState.isDead = true;
+                levelState.tries++;
+            }
         }
     }
-    return false;
 }
 
 
@@ -338,7 +357,6 @@ void DrawWrench() {
     origin.x = WRENCH_WIDTH/2;
     origin.y = WRENCH_THICKNESS/2;
 
-
     if (state.isJumping) {
         spinningWrenchAngle = 0;
         wrenchColor = jumpColor;
@@ -352,7 +370,7 @@ void DrawWrench() {
         rec.width = WRENCH_WIDTH;
         rec.height = WRENCH_THICKNESS;
     } else {
-        spinningWrenchAngle = 0;    
+        spinningWrenchAngle = 0;
         wrenchColor = WHITE;
         rec.x = state.posX - (WRENCH_WIDTH/2);
         rec.width =WRENCH_WIDTH;
@@ -425,6 +443,46 @@ void PrintWrenchState() {
     );
 }
 
+void DrawColliders() {
+
+    static Color colliderColor = (Color) {
+        255,
+        0,
+        0,
+        64
+    };
+
+
+    if (state.isSpinning) { // collider is circle with r = WRENCH_WIDTH/2
+        //return IsCircleCollidingWithLine((Vector2){state.posX, state.posY}, WRENCH_WIDTH/2, obs.line);
+        DrawCircle(
+            state.posX-(WRENCH_WIDTH/2),
+            state.posY,
+            WRENCH_WIDTH/2,
+            colliderColor
+        );
+    
+    } else if (state.isJumping) { // collider is rect with h = WRENCH_WIDTH/2, w = WRENCH_THICKNESS
+        Rectangle collider = {
+            state.posX-(WRENCH_WIDTH/2)-(WRENCH_THICKNESS/2),
+            state.posY - (WRENCH_THICKNESS/2),
+            WRENCH_THICKNESS,
+            WRENCH_WIDTH/2,  
+        };
+
+        DrawRectangleRec(collider, colliderColor);
+
+    } else { // collider is rect with h = WRENCH_THICKNESS, w = WRENCH_WIDTH
+        Rectangle collider = {
+            state.posX-WRENCH_WIDTH,
+            state.posY - (WRENCH_THICKNESS/2),
+            WRENCH_WIDTH,
+            WRENCH_THICKNESS  
+        };
+
+        DrawRectangleRec(collider, colliderColor);
+    }
+}
 
 // just an ever-changing function used for testing lineObstacles in levels
 void LoadObstacleDummyData() {
@@ -480,7 +538,7 @@ void UpdateCameraFromWrenchState() {
 
     currentAvgIndex++;
 
-    if (currentAvgIndex > CAM_SMOOTH_MAX_DATA) {
+    if (currentAvgIndex > CAM_SMOOTH_MAX_DATA-1) {
         currentAvgIndex = 0;
     }
     floatingAvgSetX[currentAvgIndex] = velModX;
@@ -492,7 +550,7 @@ void UpdateCameraFromWrenchState() {
     for (int i = currentAvgIndex; i > currentAvgIndex-CAM_SMOOTH_AVG_COUNT; i--) {
         int j = i;
         if (j < 0) {
-            j += CAM_SMOOTH_MAX_DATA;
+            j += (CAM_SMOOTH_MAX_DATA-1);
         }
         xSum += floatingAvgSetX[j];
         ySum += floatingAvgSetY[j];
@@ -543,22 +601,32 @@ void HandleFlyLeft() {
 }
 
 void HandleInput() {
-    // jumping and spinning are mutually exclusive
-    if (IsKeyDown(KEY_X)) {
-        HandleJump();
-    } else if (IsKeyDown(KEY_Z)) {
-        HandleSpin();
-    } else {
-        HandleWrenchNoAction();
+    if (IsKeyDown(KEY_Q) && DEBUG) {
+        exit(0);
     }
 
-    if (IsKeyDown(KEY_RIGHT)) {
-        HandleFlyRight();
-    }
-    if (IsKeyDown(KEY_LEFT)) {
-        HandleFlyLeft();
-    } if (IsKeyDown(KEY_Q) && DEBUG) {
-        exit(0);
+    if (!levelState.isDead){
+        // jumping and spinning are mutually exclusive
+        if (IsKeyDown(KEY_X)) {
+            HandleJump();
+        } else if (IsKeyDown(KEY_Z)) {
+            HandleSpin();
+        } else {
+            HandleWrenchNoAction();
+        }
+
+        if (IsKeyDown(KEY_RIGHT)) {
+            HandleFlyRight();
+        }
+        if (IsKeyDown(KEY_LEFT)) {
+            HandleFlyLeft();
+        }
+    } else {
+        if (IsKeyPressed(KEY_R)) {
+            state.posX = levelState.spawnPoint.x;
+            state.posY = levelState.spawnPoint.y;
+            levelState.isDead = false;
+        }
     }
 }
 
@@ -580,22 +648,22 @@ int main(void) {
         // DEBUG ---------------------------------------------------------------
         if (DEBUG) {
             //PrintWrenchState();
-            if (isWrenchCollidingWithLines()) {
-                printf("COLLISION!!!\n");
-            }
+            //DrawColliders();
         }
 
-        
         // CAMERA PASS ---------------------------------------------------------
-        UpdateCameraFromWrenchState();
-    
+        if (!levelState.isDead) {
+            UpdateCameraFromWrenchState();
+        }
 
         // LOGIC PASS ----------------------------------------------------------
         deltaTime = GetFrameTime();
         lastState = state;
 
-        ApplyGravityToWrench();
-        ApplyDragToWrench();
+        if (!levelState.isDead) {
+            ApplyGravityToWrench();
+            ApplyDragToWrench();
+        }
 
         // temporary hack so that the wrench doesn't fly out of screen
         if (state.posY >= 500) {
@@ -604,6 +672,9 @@ int main(void) {
         }
 
         HandleInput();   
+
+        HandleCollisions();
+
         SetWrenchPositionFromVelocity();
 
         // DRAW PASS -----------------------------------------------------------
@@ -615,7 +686,9 @@ int main(void) {
 
                 BeginMode2D(camera);
                     DrawLevelLines();
-                    DrawWrench();
+                    if (!levelState.isDead){
+                        DrawWrench();
+                    }
                 EndMode2D();
 
             EndTextureMode();
@@ -628,7 +701,15 @@ int main(void) {
                 0.0, WHITE);
             const char* text = "Flyclone test (x to flap, z to spin, arrow keys to move)";
             const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 15, 1);
-            DrawText(text, GetScreenWidth() / 2 - text_size.x / 2, 10, 15, WHITE);    
+            DrawText(text, GetScreenWidth() / 2 - text_size.x / 2, 10, 15, WHITE);
+
+            if (levelState.isDead) {
+                const char* deathText = "You are dead. (r to restart)";
+                const Vector2 death_text_size = MeasureTextEx(GetFontDefault(), deathText, 15, 1);
+                DrawText(deathText, GetScreenWidth() / 2 - death_text_size.x / 2, GetScreenHeight()/2, 15, WHITE);
+            }
+
+
         EndDrawing();
     }
 

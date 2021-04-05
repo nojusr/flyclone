@@ -12,3 +12,4 @@ _deps
 CPackConfig.cmake
 CPackSourceConfig.cmake
 cmake
+flyclone
