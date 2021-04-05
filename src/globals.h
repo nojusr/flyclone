@@ -30,5 +30,11 @@ int currentAvgIndex;
 // global level state.
 LevelState levelState;
 
+int targetFps;
+int camSmoothAvgCount;
+
+
+
+
 
 #endif

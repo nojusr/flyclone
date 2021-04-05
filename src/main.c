@@ -62,18 +62,22 @@ void InitLevelState() {
     levelState.levelLoaded = true;
     levelState.tries = 0;
     levelState.loadedLineCount = 0;
+}
 
+void InitTimingGlobals() {
+    targetFps = INITIAL_FPS;
+    camSmoothAvgCount = targetFps/2;
 }
 
 // GAME LOGIC ------------------------------------------------------------------
 
 void ApplyGravityToWrench() {
-    state.velY += GRAVITY;
+    state.velY += (GRAVITY*deltaTime);
 }
 
 void ApplyDragToWrench() {
     if (state.isSpinning == false) { // spinmode -> no horizontal drag
-        state.velX *= HORIZONTAL_DRAG;
+        state.velX *= (HORIZONTAL_DRAG);
 
         if (fabs(state.velX) <= 1) {
             state.velX = 0;
@@ -121,7 +125,7 @@ void DrawWrench() {
         rec.width = WRENCH_THICKNESS;
         rec.height = WRENCH_WIDTH/2;
     } else if (state.isSpinning) {
-        spinningWrenchAngle += WRENCH_SPIN_SPEED;
+        spinningWrenchAngle += WRENCH_SPIN_SPEED*deltaTime;
         wrenchColor = spinColor;
         rec.x = state.posX - (WRENCH_WIDTH/2);
         rec.width = WRENCH_WIDTH;
@@ -207,7 +211,7 @@ void UpdateCameraFromWrenchState() {
     double xSum = 0;
     double ySum = 0;
 
-    for (int i = currentAvgIndex; i > currentAvgIndex-CAM_SMOOTH_AVG_COUNT; i--) {
+    for (int i = currentAvgIndex; i > currentAvgIndex-camSmoothAvgCount; i--) {
         int j = i;
         if (j < 0) {
             j += (CAM_SMOOTH_MAX_DATA-1);
@@ -216,11 +220,13 @@ void UpdateCameraFromWrenchState() {
         ySum += floatingAvgSetY[j];
     }
     
-    double finalX = (xSum / CAM_SMOOTH_AVG_COUNT)-(WRENCH_WIDTH/2);
-    double finalY = ySum / CAM_SMOOTH_AVG_COUNT;
+    double finalX = (xSum / ((double)camSmoothAvgCount))-(WRENCH_WIDTH/2);
+    double finalY = ySum / ((double)camSmoothAvgCount);
 
     camera.target = (Vector2){finalX, finalY};
+    //camera.target = (Vector2){lockedCameraX, lockedCameraY};
 }
+
 
 // INPUT HANDLING --------------------------------------------------------------
 
@@ -295,8 +301,9 @@ int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Flyclone");
     InitWrenchState();
     InitCamera();
+    InitTimingGlobals();
     LoadObstacleDummyData();
-    SetTargetFPS(60); 
+    SetTargetFPS(targetFps); 
 
 
     int gameScreenWidth = 852;

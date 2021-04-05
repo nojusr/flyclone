@@ -8,8 +8,10 @@
 #define DEBUG true
 #define SCREEN_WIDTH 852
 #define SCREEN_HEIGHT 480
-#define GRAVITY 9.8
-#define HORIZONTAL_DRAG 0.95 // between 0 and 1
+#define GRAVITY 900
+#define HORIZONTAL_DRAG 0.95
+#define INITIAL_FPS 144
+
 
 // wrench related
 #define JUMP_STRENGTH 350
@@ -18,12 +20,13 @@
 #define WRENCH_WIDTH 50
 #define WRENCH_THICKNESS 10
 #define WRENCH_MAX_ANGLE 30
-#define WRENCH_SPIN_SPEED 35
+#define WRENCH_SPIN_SPEED 3000
+
+
 
 // limits
 #define MAX_LINES 2048
 #define CAM_SMOOTH_MAX_DATA 200
-#define CAM_SMOOTH_AVG_COUNT 30
 
 // colors
 static const Color jumpColor = {
