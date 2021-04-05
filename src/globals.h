@@ -33,6 +33,7 @@ LevelState levelState;
 int targetFps;
 int camSmoothAvgCount;
 
+RenderTexture2D target;
 
 
 

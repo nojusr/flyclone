@@ -97,7 +97,7 @@ void HandleCollisions() {
             if (lineObs.type == LINE_YELLOW) {
                 if (state.isSpinning) {
                     //https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
-                    
+
                     Line line = lineObs.line;
                     float dx = line.end.x - line.start.x;
                     float dy = line.end.y - line.start.y;
@@ -326,6 +326,7 @@ void HandleInput() {
         }
     }
 }
+
 
 int main(void) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
