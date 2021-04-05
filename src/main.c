@@ -1,12 +1,22 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+
+// raylib-related
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
 
+// first-party
+#include "consts.h"
+#include "collisions.h"
+#include "globals.h"
+#include "types.h"
+#include "debug.h"
+
+/*
 #define max(a, b) ((a)>(b)? (a) : (b))
-#define min(a, b) ((a)<(b)? (a) : (b))
+#define min(a, b) ((a)<(b)? (a) : (b))*/
 // GENERAL IDEAS:
 /*
 i think that movement speed should be reduced when isJumping
@@ -25,100 +35,6 @@ level format filename: .fclv (flyclonelevel)
 7. reduce movement speed when jumping??
 8. add a height speed limit, but make it very lax
 */
-
-// CONSTANTS -------------------------------------------------------------------
-
-// game related
-#define DEBUG true
-#define SCREEN_WIDTH 852
-#define SCREEN_HEIGHT 480
-#define GRAVITY 9.8
-#define HORIZONTAL_DRAG 0.95 // between 0 and 1
-
-// wrench related
-#define JUMP_STRENGTH 350
-#define FLY_SPEED 75
-#define MAX_FLY_SPEED 500
-#define WRENCH_WIDTH 50
-#define WRENCH_THICKNESS 10
-#define WRENCH_MAX_ANGLE 30
-#define WRENCH_SPIN_SPEED 35
-
-// limits
-#define MAX_LINES 2048
-#define CAM_SMOOTH_MAX_DATA 200
-#define CAM_SMOOTH_AVG_COUNT 30
-
-// colors
-static const Color jumpColor = {
-    233,
-    65,
-    56,
-    255,
-};
-
-static const Color spinColor = {
-    200,
-    250,
-    100,
-    255,
-};
-
-// STRUCTS ---------------------------------------------------------------------
- 
-typedef struct {
-    double posX;
-    double posY;
-    double velX;
-    double velY;
-    bool isJumping;
-    bool isSpinning;
-} WrenchState;
-
-typedef struct {
-    bool isDead;
-    bool levelLoaded;
-    int tries;
-    Vector2 spawnPoint;
-
-} LevelState; // TEMPTEMPTEMP
-
-
-typedef struct {
-    Vector2 start;
-    Vector2 end;
-} Line;
-
-typedef enum LINE_TYPE {
-    LINE_RED, // wrench has to be in "jump mode"
-    LINE_YELLOW, // allows boincing off of if in "spinmode", otherwise kills 
-    LINE_GREEN, // kills unless ship is in "spin mode"
-    LINE_WHITE // kills unless ship is in "neutral mode"
-} LINE_TYPE;
-
-typedef struct {
-    LINE_TYPE type;
-    Line line;
-} LineObstacle;
-
-
-// GLOBALS ---------------------------------------------------------------------
-
-WrenchState lastState; // global wrench state of the last frame
-WrenchState state; // global wrench state for wrench/player
-LevelState levelState;
-float deltaTime = 0.0; // gets updated every frame
-double spinningWrenchAngle = 0; // used to animate the wrench spinning
-
-// related to camera
-Camera2D camera; // main camera global
-double floatingAvgSetX[CAM_SMOOTH_MAX_DATA];
-double floatingAvgSetY[CAM_SMOOTH_MAX_DATA];
-int currentAvgIndex;
-
-// related to levels
-LineObstacle loadedLines[MAX_LINES];
-int loadedLineCount = 0;
 
 // FUNCTIONS -------------------------------------------------------------------
 
@@ -145,6 +61,8 @@ void InitLevelState() {
     levelState.spawnPoint = (Vector2){0.0, 0.0};
     levelState.levelLoaded = true;
     levelState.tries = 0;
+    levelState.loadedLineCount = 0;
+
 }
 
 // GAME LOGIC ------------------------------------------------------------------
@@ -168,171 +86,10 @@ void SetWrenchPositionFromVelocity() {
     state.posY += state.velY*deltaTime;
 }
 
-
-// TODO: REFACTOR COLLISION LOGIC TO BETTER FIT WITH RAYLIB.
-// MOVE COLLISION LOGIC OUT TO SEPARATE FILE
-
-// checks if a line has a collision with another line
-bool IsLineCollidingWithLine(Line a, Line b) {
-    float x1, y1, x2, y2, x3, y3, x4, y4;
-    x1 = a.start.x;
-    x2 = a.end.x;
-    x3 = b.start.x;
-    x4 = b.end.x;
-    y1 = a.start.y;
-    y2 = a.end.y;
-    y3 = b.start.y;
-    y4 = b.end.y;
-
-    // calculate the distance to intersection point
-    float uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1));
-    float uB = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1));   
-
-    // if uA and uB are between 0-1, lines are colliding
-    if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
-    return true;
-    }
-    return false;
-}
-
-
-bool IsLineCollidingWithPoint(Vector2 point, Line line) {
-    float buffer = 0.1; 
-    float lineLen = Vector2Distance(line.start, line.end);
-    float d1 = Vector2Distance(point, line.start);
-    float d2 = Vector2Distance(point, line.end);
-
-    if (d1+d2 >= lineLen-buffer && d1+d2 <= lineLen+buffer) {
-        return true;
-    }
-    return false;
-}
-
-
-bool IsCircleCollidingWithLine(Vector2 circlePos, float radius, Line line) {
-    bool insideStart = CheckCollisionPointCircle(line.start, circlePos, radius);
-    bool insideEnd = CheckCollisionPointCircle(line.end, circlePos, radius);
-
-    if (insideStart || insideEnd) {
-        return true;
-    }
-
-    // MAP:
-    // x1 line.s.x
-    // y1 line.s.y
-    // x2 line.e.x
-    // y2 line.e.y
-
-    float cx, cy;
-    cx = circlePos.x;
-    cy = circlePos.y;
-
-    float x1, y1, x2, y2;
-    x1 = line.start.x;
-    y1 = line.start.y;
-    x2 = line.end.x;
-    y2 = line.end.y;
-
-    float distX = x1 - x2;
-    float distY = y1 - y2;
-    float len = sqrt( (distX*distX) + (distY*distY) );
-
-    float dot = ( ((cx-x1)*(x2-x1)) + ((cy-y1)*(y2-y1)) ) / pow(len,2);
-
-    float closestX = x1 + (dot * (x2-x1));
-    float closestY = y1 + (dot * (y2-y1));
-
-    bool onSegment = IsLineCollidingWithPoint((Vector2){closestX, closestY}, line);
-    if (!onSegment) {
-        return false;
-    }
-
-    distX = closestX - cx;
-    distY = closestY - cy;
-    float distance = sqrt( (distX*distX) + (distY*distY) );
-
-    if (distance <= radius) {
-        return true;
-    }
-
-    return false;
-}
-
-// gets all lines of a rectangle, puts em in an array
-// order is: left, top, right, bottom
-void GetLinesOfRectangle (Line *output, Rectangle input) {
-
-    double leftX = input.x-(input.width/2);
-    double rightX = input.x+(input.width/2);    
-
-    double bottomY = input.y+(input.height/2);
-    double topY = input.y-(input.height/2);
-
-
-    output[0] = (Line){(Vector2){leftX, bottomY},(Vector2){leftX, topY}};
-    output[1] = (Line){(Vector2){leftX, topY},(Vector2){rightX, topY}};
-    output[2] = (Line){(Vector2){rightX, topY},(Vector2){rightX, bottomY}};
-    output[3] = (Line){(Vector2){rightX, bottomY},(Vector2){leftX, bottomY}};
-    return;
-}
-
-bool IsLineCollidingWithWrench(LineObstacle obs) {
-    if (state.isSpinning) { // collider is circle with r = WRENCH_WIDTH/2
-        return IsCircleCollidingWithLine((Vector2){state.posX-(WRENCH_WIDTH/2), state.posY}, WRENCH_WIDTH/2, obs.line);
-    } else if (state.isJumping) { // collider is rect with h = WRENCH_WIDTH/2, w = WRENCH_THICKNESS
-        Rectangle collider = {
-            state.posX-(WRENCH_WIDTH/2)-(WRENCH_THICKNESS/2),
-            state.posY - (WRENCH_THICKNESS/2),
-            WRENCH_THICKNESS,
-            WRENCH_WIDTH/2,  
-        };
-        Line rectangleLines[4] = {(Vector2){0, 0}};
-
-        GetLinesOfRectangle(rectangleLines, collider);
-
-        bool left, top, right, bottom;
-
-        left = IsLineCollidingWithLine(rectangleLines[0], obs.line);
-        top = IsLineCollidingWithLine(rectangleLines[1], obs.line);
-        right = IsLineCollidingWithLine(rectangleLines[2], obs.line);
-        bottom = IsLineCollidingWithLine(rectangleLines[3], obs.line);
-
-        if (left || top || right || bottom) {
-            return true;
-        }
-        return false;
-
-    } else { // collider is rect with h = WRENCH_THICKNESS, w = WRENCH_WIDTH
-        Rectangle collider = {
-            state.posX-WRENCH_WIDTH,
-            state.posY - (WRENCH_THICKNESS/2),
-            WRENCH_WIDTH,
-            WRENCH_THICKNESS  
-        };
-
-        Line rectangleLines[4] = {(Vector2){0, 0}};
-
-        GetLinesOfRectangle(rectangleLines, collider);
-
-        bool left, top, right, bottom;
-
-        left = IsLineCollidingWithLine(rectangleLines[0], obs.line);
-        top = IsLineCollidingWithLine(rectangleLines[1], obs.line);
-        right = IsLineCollidingWithLine(rectangleLines[2], obs.line);
-        bottom = IsLineCollidingWithLine(rectangleLines[3], obs.line);
-
-        if (left || top || right || bottom) {
-            return true;
-        }
-        return false;
-    }
-}
-
 void HandleCollisions() {
-    for (int i = 0; i < loadedLineCount; i++) {
-        
-        LineObstacle lineObs = loadedLines[i];
-        if (IsLineCollidingWithWrench(lineObs)) {
+    for (int i = 0; i < levelState.loadedLineCount; i++) {
+        LineObstacle lineObs = levelState.loadedLines[i];
+        if (CheckCollisionLineObsWrench(lineObs)) {
             if (lineObs.type == LINE_YELLOW && !state.isSpinning) {
                 levelState.isDead = true;
                 levelState.tries++;
@@ -411,8 +168,8 @@ Color GetLineObstacleColor(LineObstacle input) {
 
 void DrawLevelLines() {
     Color lineColor;
-    for (int i = 0; i < loadedLineCount; i++) {
-        LineObstacle obs = loadedLines[i];
+    for (int i = 0; i < levelState.loadedLineCount; i++) {
+        LineObstacle obs = levelState.loadedLines[i];
         lineColor = GetLineObstacleColor(obs);
         DrawLineEx(
             obs.line.start,
@@ -423,113 +180,16 @@ void DrawLevelLines() {
         DrawLineEx(
             obs.line.start,
             obs.line.end,
-            4.0,
+            2.0,
             BLACK
         );
     }
 
 }
 
-// DEBUG -----------------------------------------------------------------------
-
-void PrintWrenchState() {
-    printf("-----------------------------------\n");
-    printf(
-        "posX: %f || posY: %f || velX: %f || velY: %f\n ",
-        state.posX,
-        state.posY,
-        state.velX,
-        state.velY
-    );
-}
-
-void DrawColliders() {
-
-    static Color colliderColor = (Color) {
-        255,
-        0,
-        0,
-        64
-    };
-
-
-    if (state.isSpinning) { // collider is circle with r = WRENCH_WIDTH/2
-        //return IsCircleCollidingWithLine((Vector2){state.posX, state.posY}, WRENCH_WIDTH/2, obs.line);
-        DrawCircle(
-            state.posX-(WRENCH_WIDTH/2),
-            state.posY,
-            WRENCH_WIDTH/2,
-            colliderColor
-        );
-    
-    } else if (state.isJumping) { // collider is rect with h = WRENCH_WIDTH/2, w = WRENCH_THICKNESS
-        Rectangle collider = {
-            state.posX-(WRENCH_WIDTH/2)-(WRENCH_THICKNESS/2),
-            state.posY - (WRENCH_THICKNESS/2),
-            WRENCH_THICKNESS,
-            WRENCH_WIDTH/2,  
-        };
-
-        DrawRectangleRec(collider, colliderColor);
-
-    } else { // collider is rect with h = WRENCH_THICKNESS, w = WRENCH_WIDTH
-        Rectangle collider = {
-            state.posX-WRENCH_WIDTH,
-            state.posY - (WRENCH_THICKNESS/2),
-            WRENCH_WIDTH,
-            WRENCH_THICKNESS  
-        };
-
-        DrawRectangleRec(collider, colliderColor);
-    }
-}
-
-// just an ever-changing function used for testing lineObstacles in levels
-void LoadObstacleDummyData() {
-    
-    int totalLines = 16;
-    
-    Vector2 tmpStartVec;
-    Vector2 tmpEndVec;
-    LineObstacle tmp;
-
-    tmpStartVec.x = 200;
-    tmpStartVec.y = 300;
-    tmpEndVec.x = 500;
-    tmpEndVec.y = 10;
-    tmp.line.start = tmpStartVec;
-    tmp.line.end = tmpEndVec;
-    tmp.type = LINE_YELLOW;
-    loadedLines[loadedLineCount] = tmp;
-    loadedLineCount++;
-
-    tmpStartVec.x = 200;
-    tmpStartVec.y = 300;
-    tmpEndVec.x = -200;
-    tmpEndVec.y = 300;
-    tmp.line.start = tmpStartVec;
-    tmp.line.end = tmpEndVec;
-    tmp.type = LINE_YELLOW;
-    loadedLines[loadedLineCount] = tmp;
-    loadedLineCount++;
-
-    tmpStartVec.x = -200;
-    tmpStartVec.y = 300;
-    tmpEndVec.x = -500;
-    tmpEndVec.y = 10;
-    tmp.line.start = tmpStartVec;
-    tmp.line.end = tmpEndVec;
-    tmp.type = LINE_YELLOW;
-    loadedLines[loadedLineCount] = tmp;
-    loadedLineCount++;
-}
-
 // CAMERA RELATED --------------------------------------------------------------
 
 void UpdateCameraFromWrenchState() {
-//    double lockedCameraX = state.posX-((double)screenWidth)/2;
-//    double lockedCameraY = state.posY-((double)screenHeight)/2;
-
     double lockedCameraX = state.posX-((double)SCREEN_WIDTH)/2;
     double lockedCameraY = state.posY-((double)SCREEN_HEIGHT)/2;
 
@@ -645,12 +305,6 @@ int main(void) {
 
 
     while (!WindowShouldClose()) {
-        // DEBUG ---------------------------------------------------------------
-        if (DEBUG) {
-            //PrintWrenchState();
-            //DrawColliders();
-        }
-
         // CAMERA PASS ---------------------------------------------------------
         if (!levelState.isDead) {
             UpdateCameraFromWrenchState();
@@ -671,26 +325,21 @@ int main(void) {
             state.velY = 0;
         }
 
-        HandleInput();   
-
+        HandleInput();
         HandleCollisions();
-
         SetWrenchPositionFromVelocity();
 
         // DRAW PASS -----------------------------------------------------------
         BeginDrawing();
             ClearBackground(BLACK);
-
             BeginTextureMode(target);
                 ClearBackground(BLACK);
-
                 BeginMode2D(camera);
                     DrawLevelLines();
                     if (!levelState.isDead){
                         DrawWrench();
                     }
                 EndMode2D();
-
             EndTextureMode();
 
             DrawTexturePro(
@@ -699,6 +348,7 @@ int main(void) {
                 (Rectangle){0.0, 0.0, GetScreenWidth(), GetScreenHeight()}, 
                 (Vector2){0.0, 0.0}, 
                 0.0, WHITE);
+
             const char* text = "Flyclone test (x to flap, z to spin, arrow keys to move)";
             const Vector2 text_size = MeasureTextEx(GetFontDefault(), text, 15, 1);
             DrawText(text, GetScreenWidth() / 2 - text_size.x / 2, 10, 15, WHITE);
@@ -708,12 +358,10 @@ int main(void) {
                 const Vector2 death_text_size = MeasureTextEx(GetFontDefault(), deathText, 15, 1);
                 DrawText(deathText, GetScreenWidth() / 2 - death_text_size.x / 2, GetScreenHeight()/2, 15, WHITE);
             }
-
-
         EndDrawing();
     }
 
+    UnloadRenderTexture(target);
     CloseWindow();
-
     return 0;
 }
