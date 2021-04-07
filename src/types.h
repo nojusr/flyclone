@@ -15,6 +15,12 @@ typedef enum LINE_TYPE {
     LINE_WHITE // kills unless ship is in "neutral mode"
 } LINE_TYPE;
 
+typedef enum SCREEN {
+    SCREEN_MAIN_MENU,
+    SCREEN_EDITOR,
+    SCREEN_LEVEL,
+} SCREEN;
+
 typedef struct {
     LINE_TYPE type;
     Line line;
@@ -30,13 +36,20 @@ typedef struct {
 } WrenchState;
 
 typedef struct {
+    Vector2 spawnPoint;
+    Vector2 finishPoint;
+    LineObstacle lines[MAX_LINES];
+    int lineCount;
+} Level;
+
+typedef struct {
     bool isDead;
     bool levelLoaded;
     int tries;
-    Vector2 spawnPoint;
-    Vector2 finishPoint;
-    LineObstacle loadedLines[MAX_LINES];
-    int loadedLineCount;
-} LevelState; // TEMPTEMPTEMP
+    Level level;
+} LevelScreenState;
+
+
+
 
 #endif

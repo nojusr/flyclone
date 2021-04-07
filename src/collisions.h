@@ -34,7 +34,7 @@ bool CheckCollisionLineLine(Line a, Line b) {
 
 
 bool CheckCollisionLinePoint(Vector2 point, Line line) {
-    float buffer = 10; 
+    float buffer = 20; 
     float lineLen = Vector2Distance(line.start, line.end);
     float d1 = Vector2Distance(point, line.start);
     float d2 = Vector2Distance(point, line.end);

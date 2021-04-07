@@ -17,6 +17,9 @@ float deltaTime = 0.0;
 // used for smoothly animating the wrench while it's in spinmode
 double spinningWrenchAngle = 0; // might move this out to wrenchState
 
+// global that represents the currently picked screen
+SCREEN currentScreen;
+
 // main camera global
 Camera2D camera; 
 
@@ -28,7 +31,7 @@ double floatingAvgSetY[CAM_SMOOTH_MAX_DATA];
 int currentAvgIndex;
 
 // global level state.
-LevelState levelState;
+LevelScreenState levelState;
 
 int targetFps;
 int camSmoothAvgCount;

@@ -61,11 +61,15 @@ void DrawColliders() {
 // just an ever-changing function used for testing lineObstacles in levels
 void LoadObstacleDummyData() {
     
-    int totalLines = 16;
+    //int totalLines = 16;
     
     Vector2 tmpStartVec;
     Vector2 tmpEndVec;
     LineObstacle tmp;
+
+    Level dummyLevel;
+    dummyLevel.lineCount = 0;
+
 
     tmpStartVec.x = 200;
     tmpStartVec.y = 300;
@@ -74,8 +78,8 @@ void LoadObstacleDummyData() {
     tmp.line.start = tmpStartVec;
     tmp.line.end = tmpEndVec;
     tmp.type = LINE_YELLOW;
-    levelState.loadedLines[levelState.loadedLineCount] = tmp;
-    levelState.loadedLineCount++;
+    dummyLevel.lines[dummyLevel.lineCount] = tmp;
+    dummyLevel.lineCount++;
 
     tmpStartVec.x = 200;
     tmpStartVec.y = 300;
@@ -84,8 +88,8 @@ void LoadObstacleDummyData() {
     tmp.line.start = tmpStartVec;
     tmp.line.end = tmpEndVec;
     tmp.type = LINE_YELLOW;
-    levelState.loadedLines[levelState.loadedLineCount] = tmp;
-    levelState.loadedLineCount++;
+    dummyLevel.lines[dummyLevel.lineCount] = tmp;
+    dummyLevel.lineCount++;
 
     tmpStartVec.x = -200;
     tmpStartVec.y = 300;
@@ -94,8 +98,10 @@ void LoadObstacleDummyData() {
     tmp.line.start = tmpStartVec;
     tmp.line.end = tmpEndVec;
     tmp.type = LINE_YELLOW;
-    levelState.loadedLines[levelState.loadedLineCount] = tmp;
-    levelState.loadedLineCount++;
+    dummyLevel.lines[dummyLevel.lineCount] = tmp;
+    dummyLevel.lineCount++;
+
+    levelState.level = dummyLevel;
 }
 
 #endif
