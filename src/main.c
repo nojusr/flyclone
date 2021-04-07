@@ -14,6 +14,7 @@
 #include "types.h"
 #include "debug.h"
 #include "level.h" 
+#include "editor.h"
 /*
 #define max(a, b) ((a)>(b)? (a) : (b))
 #define min(a, b) ((a)<(b)? (a) : (b))*/
@@ -70,7 +71,7 @@ void InitTimingGlobals() {
 }
 
 void InitScreenState() {
-    currentScreen = SCREEN_LEVEL;
+    currentScreen = SCREEN_EDITOR;
 }
 
 // MAIN ------------------------------------------------------------------------
@@ -96,6 +97,9 @@ int main(void) {
         switch (currentScreen) {
         case SCREEN_LEVEL:
             LevelScreenMainLoop(target);
+            break;
+        case SCREEN_EDITOR:
+            EditorScreenMainLoop(target);
             break;
         default:
             printf("No screen state set. aborting...");
