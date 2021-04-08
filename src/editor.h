@@ -20,10 +20,10 @@
 
 
 
-const int padding = 10;
+const int padding = 5;
 const int min_gui_column_width = 200;
 const int default_height = 25;
-const int default_margin = 10; // margin between gui elements
+const int default_margin = 5; // margin between gui elements
 const int drag_margin = 20;
 
 
@@ -83,16 +83,51 @@ void DrawMainGuiColumn(float screenRatio) {
     };
 
 
-    GuiButton(mainRec, "VIBE CHECK");
-    mainRec.y += default_height+default_margin;
-    GuiButton(mainRec, "VIBE CHECK2");
-    mainRec.y += default_height+default_margin;
+    mainRec.y += default_height/2;
+    GuiDrawText("Line Type Selection:", mainRec, TEXT_ALIGNMENT, BLACK);
+    mainRec.y += default_height/2;
+    
+
     halfLeftRec.y = mainRec.y;
     halfRightRec.y = mainRec.y;
-    GuiButton(halfLeftRec, "LeftHalf");
-    GuiButton(halfRightRec, "RightHalf");
+    GuiButton(halfLeftRec, "Yellow");
+    GuiButton(halfRightRec, "Red");
 
-} 
+    mainRec.y += default_height+default_margin;
+
+
+    halfLeftRec.y = mainRec.y;
+    halfRightRec.y = mainRec.y;
+    GuiButton(halfLeftRec, "Green");
+    GuiButton(halfRightRec, "White");
+    mainRec.y += default_height+default_margin;
+
+    halfLeftRec.y = mainRec.y;
+    halfRightRec.y = mainRec.y;
+    GuiButton(halfLeftRec, "Magenta");
+    mainRec.y += default_height+default_margin;
+
+
+    mainRec.y += default_height/2;
+    GuiDrawText("Game start/end points:", mainRec, TEXT_ALIGNMENT, BLACK);
+    mainRec.y += default_height/2;
+
+    halfLeftRec.y = mainRec.y;
+    halfRightRec.y = mainRec.y;
+    GuiButton(halfLeftRec, "Start");
+    GuiButton(halfRightRec, "Goal");
+
+    mainRec.y += default_height;
+
+    mainRec.y += default_height/2;
+    GuiDrawText("Save/Test:", mainRec, TEXT_ALIGNMENT, BLACK);
+    mainRec.y += default_height/2;
+    GuiButton(mainRec, "Test Level");
+    mainRec.y += default_height+default_margin;
+
+    GuiButton(mainRec, "Save Level");
+    mainRec.y += default_height+default_margin;
+}
 
 
 Color GetEditorLineObstacleColor(LineObstacle input) {
