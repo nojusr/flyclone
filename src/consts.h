@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 480
 #define GRAVITY 900
 #define HORIZONTAL_DRAG 0.95
-#define INITIAL_FPS 144
+#define INITIAL_FPS 60
 
 
 // wrench related

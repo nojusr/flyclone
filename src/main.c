@@ -59,15 +59,21 @@ void InitCamera() {
 
 void InitLevelState() {
     levelState.isDead = false;
-    levelState.level.spawnPoint = (Vector2){0.0, 0.0};
     levelState.levelLoaded = true;
     levelState.tries = 0;
-    levelState.level.lineCount = 0;
+    levelState.level = LoadObstacleDummyData();
+}
+
+void InitEditorState() {
+    editorState.cameraPos = (Vector2){0.0, 0.0};
+    editorState.cameraZoom = 1.0;
+    editorState.level = LoadObstacleDummyData();
+    editorState.isDragging = false;
 }
 
 void InitTimingGlobals() {
     targetFps = INITIAL_FPS;
-    camSmoothAvgCount = targetFps/2;
+    camSmoothAvgCount = 30;
 }
 
 void InitScreenState() {
@@ -83,7 +89,8 @@ int main(void) {
     InitWrenchState();
     InitCamera();
     InitTimingGlobals();
-    LoadObstacleDummyData();
+    InitLevelState();
+    InitEditorState();
     SetTargetFPS(targetFps); 
 
 
@@ -106,8 +113,6 @@ int main(void) {
             exit(1);
             //break;
         }
-
-
     }
 
     UnloadRenderTexture(target);

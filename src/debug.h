@@ -59,7 +59,7 @@ void DrawColliders() {
 }
 
 // just an ever-changing function used for testing lineObstacles in levels
-void LoadObstacleDummyData() {
+Level LoadObstacleDummyData() {
     
     //int totalLines = 16;
     
@@ -69,7 +69,7 @@ void LoadObstacleDummyData() {
 
     Level dummyLevel;
     dummyLevel.lineCount = 0;
-
+    dummyLevel.spawnPoint = (Vector2){0.0, 0.0};
 
     tmpStartVec.x = 200;
     tmpStartVec.y = 300;
@@ -101,7 +101,7 @@ void LoadObstacleDummyData() {
     dummyLevel.lines[dummyLevel.lineCount] = tmp;
     dummyLevel.lineCount++;
 
-    levelState.level = dummyLevel;
+    return dummyLevel;
 }
 
 #endif

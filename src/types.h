@@ -49,6 +49,14 @@ typedef struct {
     Level level;
 } LevelScreenState;
 
+typedef struct {
+    float screenRatio;
+    Vector2 mousePos;
+    Level level;
+    Vector2 cameraPos;
+    float cameraZoom;
+    bool isDragging;
+} EditorScreenState;
 
 
 

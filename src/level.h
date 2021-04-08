@@ -237,8 +237,15 @@ void HandleFlyLeft() {
 }
 
 void HandleInput() {
+
+    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+
     if (IsKeyDown(KEY_Q) && DEBUG) {
         exit(0);
+    }
+
+    if (IsKeyPressed(KEY_W)) {
+        currentScreen = SCREEN_EDITOR;
     }
 
     if (IsKeyPressed(KEY_R) && DEBUG) {

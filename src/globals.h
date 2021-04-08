@@ -33,6 +33,11 @@ int currentAvgIndex;
 // global level state.
 LevelScreenState levelState;
 
+// global editor screen state.
+EditorScreenState editorState;
+
+
+// global game-status state
 int targetFps;
 int camSmoothAvgCount;
 

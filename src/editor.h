@@ -24,13 +24,16 @@ const int padding = 10;
 const int min_gui_column_width = 200;
 const int default_height = 25;
 const int default_margin = 10; // margin between gui elements
-
 const int drag_margin = 20;
 
-float screenRatio = 0.25;
-Vector2 mousePos = {0.0, 0.0};
 
-bool isDragging = false;
+
+
+Vector2 mouseDragStartPos;
+Vector2 cameraDragStartInitialPos;
+bool isPanning;
+
+// LOGIC -----------------------------------------------------------------------
 
 int GetScaledWidth(float ratio) {
     int test = (int)(GetScreenWidth() * ratio);
@@ -40,6 +43,7 @@ int GetScaledWidth(float ratio) {
     return test;
 }
 
+// DRAW ------------------------------------------------------------------------
 
 void DrawGuiBackground(float screenRatio) {
     DrawRectangle(
@@ -90,40 +94,127 @@ void DrawMainGuiColumn(float screenRatio) {
 
 } 
 
+
+Color GetEditorLineObstacleColor(LineObstacle input) {
+    switch (input.type) {
+        case LINE_GREEN:
+            return spinColor;
+        case LINE_WHITE:
+            return WHITE;
+        case LINE_RED:
+            return jumpColor;
+        case LINE_YELLOW:
+            return YELLOW; // TODO: change to more accurate color
+    }
+}
+
+
+void DrawEditorLevelLines() {
+    Color lineColor;
+    for (int i = 0; i < editorState.level.lineCount; i++) {
+        LineObstacle obs = editorState.level.lines[i];
+        lineColor = GetEditorLineObstacleColor(obs);
+        DrawLineEx(
+            obs.line.start,
+            obs.line.end,
+            6.0,
+            lineColor
+        );
+        DrawLineEx(
+            obs.line.start,
+            obs.line.end,
+            2.0,
+            BLACK
+        );
+    }
+
+}
+
+
+// CAMERA ----------------------------------------------------------------------
+
+void UpdateCameraFromEditorState() {
+    camera.target = editorState.cameraPos;
+    camera.zoom = editorState.cameraZoom;
+}
+
+
 // called inside the !windowShouldClose loop in main.c every frame, if currentScreen is set to SCREEN_LEVEL
 void EditorScreenMainLoop(RenderTexture2D target) {
 
+    // CAMERA PASS -------------------------------------------------------------
+    UpdateCameraFromEditorState();
+
+
     // LOGIC PASS --------------------------------------------------------------
-    mousePos = GetMousePosition();
+    editorState.mousePos = GetMousePosition();
 
-    int sideBarWidth = GetScaledWidth(screenRatio);
+    int sideBarWidth = GetScaledWidth(editorState.screenRatio);
 
-    if (isDragging) {
-        float ratio = mousePos.x/GetScreenWidth();
-        if (ratio < 1) {
-            screenRatio = ratio;
-        }
-        
+    int viewPortCenterX = GetScaledWidth((1-editorState.screenRatio)/2);
+
+    if (IsKeyUp(KEY_LEFT_CONTROL) && isPanning) {
+            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+            isPanning = false;     
     }
 
-    if (((int)mousePos.x) < sideBarWidth+drag_margin && ((int)mousePos.x) > sideBarWidth-drag_margin) {
+    if (editorState.isDragging) {
+        float ratio = editorState.mousePos.x/GetScreenWidth();
+        if (ratio < 1) {
+            editorState.screenRatio = ratio;
+        }
+        
+    } else if (isPanning) {
+        
+        editorState.cameraPos = Vector2Add(
+            cameraDragStartInitialPos,
+            Vector2Subtract(mouseDragStartPos, editorState.mousePos)
+        ) ;
+    }
+
+
+
+    if (((int)editorState.mousePos.x) < sideBarWidth+drag_margin &&
+        ((int)editorState.mousePos.x) > sideBarWidth-drag_margin) {
         SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            isDragging = true;
+            editorState.isDragging = true;
         } if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
-            isDragging = false;
+            editorState.isDragging = false;
+        }
+    } else if (((int)editorState.mousePos.x) > sideBarWidth+drag_margin) {
+
+        if (IsKeyPressed(KEY_LEFT_CONTROL)) {
+            cameraDragStartInitialPos = camera.target;
+            mouseDragStartPos = editorState.mousePos;
+            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
+            isPanning = true;
         }
     } else {
         SetMouseCursor(MOUSE_CURSOR_DEFAULT);
     }
 
 
+    
+
+    if (IsKeyPressed(KEY_Q)) {
+        exit(0);
+    }
+
+    if (IsKeyPressed(KEY_W)) {
+        currentScreen = SCREEN_LEVEL;
+    }
 
     // DRAW PASS ---------------------------------------------------------------
     BeginDrawing();
         ClearBackground(BLACK);
-        DrawGuiBackground(screenRatio);
-        DrawMainGuiColumn(screenRatio);
+        BeginMode2D(camera);
+            DrawLevelLines();
+        EndMode2D();
+
+
+        DrawGuiBackground(editorState.screenRatio);
+        DrawMainGuiColumn(editorState.screenRatio);
     EndDrawing();
 }
 
