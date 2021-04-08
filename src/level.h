@@ -135,7 +135,7 @@ Color GetLineObstacleColor(LineObstacle input) {
         case LINE_RED:
             return jumpColor;
         case LINE_YELLOW:
-            return YELLOW; // TODO: change to more accurate color
+            return yellowLineColor; // TODO: change to more accurate color
     }
 }
 

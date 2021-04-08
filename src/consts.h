@@ -23,6 +23,12 @@
 #define WRENCH_SPIN_SPEED 3000
 #define WRENCH_BOUNCE_LOSS_RATIO 0.9
 
+// editor screen related
+#define EDITOR_SIDEBAR_MIN_WIDTH 200
+#define EDITOR_ITEM_HEIGHT 25
+#define EDITOR_ITEM_PADDING 5
+#define EDITOR_ITEM_MARGIN 5 // margin between gui elements
+#define EDITOR_DRAG_HANDLE_MARGIN 20 // mul by 2 to get drag handle width
 
 // limits
 #define MAX_LINES 2048
@@ -40,6 +46,13 @@ static const Color spinColor = {
     200,
     250,
     100,
+    255,
+};
+
+static const Color yellowLineColor = {
+    240,
+    235,
+    35,
     255,
 };
 

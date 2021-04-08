@@ -17,28 +17,12 @@
 #include "types.h"
 #include "debug.h"
 
-
-
-
-const int padding = 5;
-const int min_gui_column_width = 200;
-const int default_height = 25;
-const int default_margin = 5; // margin between gui elements
-const int drag_margin = 20;
-
-
-
-
-Vector2 mouseDragStartPos;
-Vector2 cameraDragStartInitialPos;
-bool isPanning;
-
 // LOGIC -----------------------------------------------------------------------
 
 int GetScaledWidth(float ratio) {
     int test = (int)(GetScreenWidth() * ratio);
-    if (min_gui_column_width > test) {
-        return min_gui_column_width;
+    if (EDITOR_SIDEBAR_MIN_WIDTH > test) {
+        return EDITOR_SIDEBAR_MIN_WIDTH;
     }
     return test;
 }
@@ -58,34 +42,34 @@ void DrawGuiBackground(float screenRatio) {
 void DrawMainGuiColumn(float screenRatio) {
 
 
-    int halfPadding = (int)(padding/2);
+    int halfPadding = (int)(EDITOR_ITEM_PADDING/2);
 
     Rectangle mainRec = (Rectangle){
-        padding,
-        padding,
-        GetScaledWidth(screenRatio)-(padding*2),
-        default_height,
+        EDITOR_ITEM_PADDING,
+        EDITOR_ITEM_PADDING,
+        GetScaledWidth(editorState.screenRatio)-(EDITOR_ITEM_PADDING*2),
+        EDITOR_ITEM_HEIGHT,
     };
 
 
     Rectangle halfLeftRec = (Rectangle){
-        padding,
-        padding,
-        (GetScaledWidth(screenRatio)/2)-padding-halfPadding,
-        default_height,
+        EDITOR_ITEM_PADDING,
+        EDITOR_ITEM_PADDING,
+        (GetScaledWidth(screenRatio)/2)-EDITOR_ITEM_PADDING-halfPadding,
+        EDITOR_ITEM_HEIGHT,
     };
 
     Rectangle halfRightRec = (Rectangle) {
         (GetScaledWidth(screenRatio)/2)+halfPadding,
-        padding,
-        (GetScaledWidth(screenRatio)/2)-padding-halfPadding,
-        default_height,
+        EDITOR_ITEM_PADDING,
+        (GetScaledWidth(screenRatio)/2)-EDITOR_ITEM_PADDING-halfPadding,
+        EDITOR_ITEM_HEIGHT,
     };
 
 
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_HEIGHT/2;
     GuiDrawText("Line Type Selection:", mainRec, TEXT_ALIGNMENT, BLACK);
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_HEIGHT/2;
     
 
     halfLeftRec.y = mainRec.y;
@@ -93,40 +77,48 @@ void DrawMainGuiColumn(float screenRatio) {
     GuiButton(halfLeftRec, "Yellow");
     GuiButton(halfRightRec, "Red");
 
-    mainRec.y += default_height+default_margin;
+    mainRec.y += EDITOR_ITEM_HEIGHT+EDITOR_ITEM_MARGIN;
 
 
     halfLeftRec.y = mainRec.y;
     halfRightRec.y = mainRec.y;
     GuiButton(halfLeftRec, "Green");
     GuiButton(halfRightRec, "White");
-    mainRec.y += default_height+default_margin;
+    mainRec.y += EDITOR_ITEM_HEIGHT+EDITOR_ITEM_MARGIN;
 
     halfLeftRec.y = mainRec.y;
     halfRightRec.y = mainRec.y;
     GuiButton(halfLeftRec, "Magenta");
-    mainRec.y += default_height+default_margin;
+    mainRec.y += EDITOR_ITEM_HEIGHT+EDITOR_ITEM_MARGIN;
 
 
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
     GuiDrawText("Game start/end points:", mainRec, TEXT_ALIGNMENT, BLACK);
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
 
     halfLeftRec.y = mainRec.y;
     halfRightRec.y = mainRec.y;
     GuiButton(halfLeftRec, "Start");
     GuiButton(halfRightRec, "Goal");
 
-    mainRec.y += default_height;
+    mainRec.y += EDITOR_ITEM_MARGIN;
 
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
     GuiDrawText("Save/Test:", mainRec, TEXT_ALIGNMENT, BLACK);
-    mainRec.y += default_height/2;
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
     GuiButton(mainRec, "Test Level");
-    mainRec.y += default_height+default_margin;
+    mainRec.y += EDITOR_ITEM_HEIGHT+EDITOR_ITEM_MARGIN;
 
     GuiButton(mainRec, "Save Level");
-    mainRec.y += default_height+default_margin;
+    mainRec.y += EDITOR_ITEM_HEIGHT+EDITOR_ITEM_MARGIN;
+
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
+    GuiDrawText("Guide:", mainRec, TEXT_ALIGNMENT, BLACK);
+    mainRec.y += EDITOR_ITEM_MARGIN/2;
+
+    Rectangle tmpRec = mainRec;
+    tmpRec.height = EDITOR_ITEM_HEIGHT*5;
+    GuiTextBoxMulti(tmpRec, "Hold CTRL while mousing over the main screen to pan.", 15, false);
 }
 
 
@@ -139,12 +131,12 @@ Color GetEditorLineObstacleColor(LineObstacle input) {
         case LINE_RED:
             return jumpColor;
         case LINE_YELLOW:
-            return YELLOW; // TODO: change to more accurate color
+            return yellowLineColor; // TODO: change to more accurate color
     }
 }
 
 
-void DrawEditorLevelLines() {
+void DrawEditorLevelLines() { // TODO: redraw so that handles are drawn better
     Color lineColor;
     for (int i = 0; i < editorState.level.lineCount; i++) {
         LineObstacle obs = editorState.level.lines[i];
@@ -173,6 +165,24 @@ void UpdateCameraFromEditorState() {
     camera.zoom = editorState.cameraZoom;
 }
 
+// INPUT -----------------------------------------------------------------------
+void HandleMouseInput() {
+    //TODO: implement
+}
+
+void HandleKeyboardInput() {
+    if (IsKeyPressed(KEY_Q)) {
+        exit(0);
+    }
+
+    if (IsKeyPressed(KEY_W)) {
+        currentScreen = SCREEN_LEVEL;
+    }
+}
+
+void HandleLineDrawing() {
+    //TODO: implement/rename
+}
 
 // called inside the !windowShouldClose loop in main.c every frame, if currentScreen is set to SCREEN_LEVEL
 void EditorScreenMainLoop(RenderTexture2D target) {
@@ -184,69 +194,16 @@ void EditorScreenMainLoop(RenderTexture2D target) {
     // LOGIC PASS --------------------------------------------------------------
     editorState.mousePos = GetMousePosition();
 
-    int sideBarWidth = GetScaledWidth(editorState.screenRatio);
-
-    int viewPortCenterX = GetScaledWidth((1-editorState.screenRatio)/2);
-
-    if (IsKeyUp(KEY_LEFT_CONTROL) && isPanning) {
-            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-            isPanning = false;     
-    }
-
-    if (editorState.isDragging) {
-        float ratio = editorState.mousePos.x/GetScreenWidth();
-        if (ratio < 1) {
-            editorState.screenRatio = ratio;
-        }
-        
-    } else if (isPanning) {
-        
-        editorState.cameraPos = Vector2Add(
-            cameraDragStartInitialPos,
-            Vector2Subtract(mouseDragStartPos, editorState.mousePos)
-        ) ;
-    }
-
-
-
-    if (((int)editorState.mousePos.x) < sideBarWidth+drag_margin &&
-        ((int)editorState.mousePos.x) > sideBarWidth-drag_margin) {
-        SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            editorState.isDragging = true;
-        } if (IsMouseButtonUp(MOUSE_LEFT_BUTTON)) {
-            editorState.isDragging = false;
-        }
-    } else if (((int)editorState.mousePos.x) > sideBarWidth+drag_margin) {
-
-        if (IsKeyPressed(KEY_LEFT_CONTROL)) {
-            cameraDragStartInitialPos = camera.target;
-            mouseDragStartPos = editorState.mousePos;
-            SetMouseCursor(MOUSE_CURSOR_RESIZE_ALL);
-            isPanning = true;
-        }
-    } else {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-    }
-
-
-    
-
-    if (IsKeyPressed(KEY_Q)) {
-        exit(0);
-    }
-
-    if (IsKeyPressed(KEY_W)) {
-        currentScreen = SCREEN_LEVEL;
-    }
+    HandleMouseInput();
+    HandleKeyboardInput();
+    HandleLineDrawing();
 
     // DRAW PASS ---------------------------------------------------------------
     BeginDrawing();
         ClearBackground(BLACK);
         BeginMode2D(camera);
-            DrawLevelLines();
+            DrawEditorLevelLines();
         EndMode2D();
-
 
         DrawGuiBackground(editorState.screenRatio);
         DrawMainGuiColumn(editorState.screenRatio);

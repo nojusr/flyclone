@@ -56,6 +56,12 @@ typedef struct {
     Vector2 cameraPos;
     float cameraZoom;
     bool isDragging;
+    Vector2 mouseDragStartPos;
+    Vector2 cameraDragStartInitialPos;
+    bool isPanning;
+    bool isDrawingLine;
+    int currentlyEditingLineIndex;
+    
 } EditorScreenState;
 
 
